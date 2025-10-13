@@ -1,10 +1,10 @@
 # Agentic Search Investigator
 
-This repository contains a Python-based search agent built on the principles of **Agentic Search**. Instead of relying on the RAG pipeline (chunking, embeddings, reranking), this agent uses an intelligent LLM (via Ollama) and tools (`Glob` and `Grep` simulation) to investigate a document corpus directly.
+This repository contains a Python-based search agent built on the principles of **Agentic Search**. Instead of relying on the RAG pipeline (chunking, embeddings, reranking), this agent uses a LLM (via Ollama) and filesystem tools (`Glob` and `Grep` simulation) to investigate a document corpus directly.
 
 ## 💡 Concept: Why Agentic Search?
 
-Traditional Retrieval-Augmented Generation (RAG) was a workaround for LLMs with small context windows. As context windows grow, the need for vector databases, complex chunking, and similarity search diminishes.
+Traditional Retrieval-Augmented Generation (RAG) works successfully for LLMs with small context windows. As context windows grow, the need for vector databases, complex chunking, and similarity search diminishes.
 
 This agent operates like a forensic investigator:
 
@@ -51,7 +51,7 @@ Clone the repository and install the dependencies from `requirements.txt`.
 
 ### Corpus Setup
 
-Create a folder named `content` in the root directory and place your `.txt`, `.md`, or other text-readable documents inside.
+Use/Create the folder named `content` in the root directory and place your `.txt`, `.md`, or other text-readable documents inside.
 
 ```
 /your-repo
@@ -88,7 +88,7 @@ python agentic_search.py "What are the core findings on revenue recognition poli
 
 ## ⚙️ Core Agent Workflow
 
-The `agentic_search.py` script orchestrates the following process:
+The `agentic_search.py` script follows this workflow:
 
 1.  **Keyword Extraction:** The query is converted into a robust set of keywords using **NLTK Lemmatization** and official **Stop Word** filtering to maximize search recall.
     
