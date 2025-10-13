@@ -12,9 +12,9 @@ from nltk.corpus import stopwords
 
 # --- I. IMPORTS AND CONFIGURATION ---
 
-# Define a stable location for NLTK data (within the project directory)
+# Define location for NLTK data (within the project directory)
 NLTK_DATA_DIR = os.path.join(os.getcwd(), '.nltk_data')
-# Add the custom path to NLTK's search paths
+# Add custom path to NLTK's search paths
 nltk.data.path.insert(0, NLTK_DATA_DIR)
 
 # NLTK data download check (ensure this runs once)
@@ -23,9 +23,8 @@ try:
     nltk.data.find('corpora/wordnet')
     # Check for the averaged perceptron tagger (required for pos='n'/'v' robustness)
     nltk.data.find('taggers/averaged_perceptron_tagger')
-    # NEW CHECK: Check for stopwords corpus
+    # Check for stopwords corpus
     nltk.data.find('corpora/stopwords')
-# FIX: Explicitly download and save to the NLTK_DATA_DIR
 except LookupError:
     print(f"NLTK data (wordnet, tagger, and stopwords) not found. Downloading to {NLTK_DATA_DIR}...")
     # Create directory if it doesn't exist
@@ -37,12 +36,12 @@ except LookupError:
     nltk.download('stopwords', quiet=True, download_dir=NLTK_DATA_DIR)
     print("NLTK data download complete.")
 
-# Initialize the nltk lemmatizer globally
+# Initialize nltk lemmatizer globally
 LEMMA_TOOL = WordNetLemmatizer()
-# Initialize the nltk stop words set
+# Initialize nltk stop words set
 STOP_WORDS = set(stopwords.words('english'))
 
-# Configuration for the Agent
+# Configuration for Agent
 CORPUS_DIR = "content"
 CORPUS_LIMIT = "5"
 OLLAMA_MODEL = "llama3" # Default Ollama model
@@ -50,8 +49,7 @@ OLLAMA_API_URL = "http://localhost:11434/api/generate" # Default local Ollama en
 OLLAMA_CONTEXT_SIZE = 8192 # Set the context size (num_ctx) for Ollama to use.
                            # Adjust this value based on your Ollama model's capability.
 
-# System Instruction for the Agent's behavior (The Agent's Brain)
-# This strictly enforces dependency on the provided context, following the agentic principle.
+# System Instruction for Agent's behavior
 SYSTEM_PROMPT = """
 You are a highly specialized Agentic Search and Synthesis System. Your primary function is to act as a forensic investigator, synthesizing information from a provided document corpus.
 
@@ -85,7 +83,7 @@ def _extract_keywords(query: str) -> List[str]:
         # Lemmatize as verb ('v')
         lemmatized_keywords.add(LEMMA_TOOL.lemmatize(word, pos='v'))
         
-    # Also include the original keyword list just in case lemmatization fails (e.g., proper nouns)
+    # Include the original keyword list just in case lemmatization fails (e.g., proper nouns)
     final_keywords = lemmatized_keywords.union(set(initial_keywords))
     
     return list(final_keywords) # Return unique and lemmatized keywords
@@ -134,8 +132,6 @@ def glob_files(corpus_dir: str, query: str, corpus_limit: int) -> List[str]:
                     'mtime': stat_info.st_mtime,
                     'is_keyword_match': is_keyword_match
                 })
-
-        # --- NEW STRICT SELECTIVITY LOGIC ---
         
         # 1. Separate matches from non-matches
         keyword_matches = [f for f in all_files if f['is_keyword_match']]
@@ -153,7 +149,6 @@ def glob_files(corpus_dir: str, query: str, corpus_limit: int) -> List[str]:
             print("Progress Signal: Prioritizing strict keyword matches.")
         else:
             # FALLBACK ACTION: If no keywords match, return the most recent files.
-            # This is critical to avoid exiting when the search term is a concept.
             selected_files = other_files[:int(CORPUS_LIMIT)]
             print("Progress Signal: No keyword matches found in filenames. Falling back to most recent files.")
 
@@ -186,14 +181,13 @@ def grep_files(file_paths: List[str], query: str, context_lines: int = 1) -> Dic
         return {}
 
     # Compile a regex pattern to find any of the keywords
-    # This simulates fast, exact-match searching
+    # Simulates fast, exact-match searching
     combined_pattern = re.compile(f'({"|".join(keyword_patterns)})', re.IGNORECASE)
     
     print(f"Agent's Grep Tool: Searching for keyword patterns: {', '.join(keywords)} in {len(file_paths)} files.")
 
     for file_path in file_paths:
         try:
-            # Note: We must handle potential non-text file types gracefully
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()
             
@@ -204,7 +198,6 @@ def grep_files(file_paths: List[str], query: str, context_lines: int = 1) -> Dic
             for i, line in enumerate(lines):
                 if combined_pattern.search(line):
                     # Found a match. Extract the context (line itself)
-                    
                     # Highlight the keywords in the line for the LLM's attention
                     highlighted_line = combined_pattern.sub(lambda m: f'**{m.group(0)}**', line)
                     
@@ -213,19 +206,19 @@ def grep_files(file_paths: List[str], query: str, context_lines: int = 1) -> Dic
 
             if file_matches:
                 # Limit the number of snippets to prevent flooding the LLM, 
-                # relying on the Agent (the LLM itself) to ask for more if needed.
+                # relying on Agent (the LLM itself) to ask for more if needed.
                 # 10 is a reasonable limit for initial context.
                 results[file_path] = file_matches[:10] 
 
         except UnicodeDecodeError:
-            # This handles binary files (like PDFs) that we can't easily read as text.
+            # Handles binary files (like PDFs) that we can't easily read as text.
             pass # Silently skip non-text files for grep
         except Exception as e:
             print(f"Could not grep file {file_path}: {e}")
 
     return results
 
-# --- III. THE LLM'S REASONING FUNCTION (The Agent's Brain) ---
+# --- III. THE LLM'S REASONING FUNCTION ---
 
 def query_ollama_agent(
     query: str, 
@@ -233,7 +226,7 @@ def query_ollama_agent(
     grep_results: Dict[str, List[str]], 
     model_name: str, 
     api_url: str,
-    context_size: int # Added context_size parameter
+    context_size: int
 ) -> str:
     """
     The agent's reasoning function. It takes the query and tool results,
@@ -259,9 +252,9 @@ def query_ollama_agent(
 
     corpus_context = "\n".join(context_parts)
 
-    # 2. Construct the Final Prompt Payload
+    # 2. Construct Final Prompt Payload
     
-    # The final user prompt structure guides the agent to use the provided context immediately
+    # Final user prompt structure guides agent to use the provided context immediately
     user_prompt = f"""
     [CORPUS CONTEXT]
     {corpus_context}
@@ -283,7 +276,7 @@ def query_ollama_agent(
         }
     }
 
-    # 3. Call the Ollama API with retry logic (Exponential Backoff)
+    # 3. Call Ollama API with retry logic (Exponential Backoff)
     max_retries = 3
     delay = 1
     
@@ -329,7 +322,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # If the script is run without arguments, ask the user interactively
+    # If script is run without arguments, ask user interactively
     query = args.query
     if not query:
         print("Agent Initializing. Please enter the query you want the agent to investigate.")
@@ -363,14 +356,14 @@ def main():
         
         if not grep_results:
             print("Progress Signal: Grep found no keyword matches in the selected files.")
-            # Even if grep finds nothing, we still call the LLM to get the final "not found" response
+            # If grep finds nothing, still call the LLM to get final "not found" response
             final_answer = query_ollama_agent(
                 query, 
                 file_paths, 
                 grep_results, 
                 OLLAMA_MODEL, 
                 OLLAMA_API_URL,
-                OLLAMA_CONTEXT_SIZE # Passed to the function
+                OLLAMA_CONTEXT_SIZE 
             )
         else:
             total_snippets = sum(len(snippets) for snippets in grep_results.values())
@@ -384,7 +377,7 @@ def main():
                 grep_results, 
                 OLLAMA_MODEL, 
                 OLLAMA_API_URL,
-                OLLAMA_CONTEXT_SIZE # Passed to the function
+                OLLAMA_CONTEXT_SIZE
             )
 
     # 3. Output
