@@ -12,7 +12,7 @@ from nltk.corpus import stopwords
 
 # --- I. IMPORTS AND CONFIGURATION ---
 
-# Define location for NLTK data (within the project directory)
+# Define location for NLTK data (within project directory)
 NLTK_DATA_DIR = os.path.join(os.getcwd(), '.nltk_data')
 # Add custom path to NLTK's search paths
 nltk.data.path.insert(0, NLTK_DATA_DIR)
@@ -93,7 +93,7 @@ def _extract_keywords(query: str) -> List[str]:
 def glob_files(corpus_dir: str, query: str, corpus_limit: int) -> List[str]:
     """
     Agent's file discovery tool 
-    It returns a strictly selective list of file paths.
+    Returns a strictly selective list of file paths.
     
     Strict Selectivity Logic:
     1. Filter: Find ALL files where query keywords appear in the filename.
@@ -167,10 +167,8 @@ def glob_files(corpus_dir: str, query: str, corpus_limit: int) -> List[str]:
 
 def grep_files(file_paths: List[str], query: str, context_lines: int = 1) -> Dict[str, List[str]]:
     """
-    Agent's content search tool (like the 'Grep' tool in the article).
-    It performs a fuzzy keyword search across the content of the specified files.
-    
-    Returns a dictionary mapping file path to a list of matching context snippets.
+    Agent's search tool performs fuzzy keyword search across content of specified files.
+    Returns dictionary mapping file path to a list of matching context snippets.
     """
     results: Dict[str, List[str]] = {}
     keywords = _extract_keywords(query)
@@ -229,7 +227,7 @@ def query_ollama_agent(
     context_size: int
 ) -> str:
     """
-    The agent's reasoning function. It takes the query and tool results,
+    Agent's reasoning function. It takes the query and tool results,
     constructs a grounded prompt, and calls the Ollama API.
     """
     
@@ -254,7 +252,7 @@ def query_ollama_agent(
 
     # 2. Construct Final Prompt Payload
     
-    # Final user prompt structure guides agent to use the provided context immediately
+    # Final user prompt structure guides agent to use provided context immediately
     user_prompt = f"""
     [CORPUS CONTEXT]
     {corpus_context}
@@ -288,7 +286,7 @@ def query_ollama_agent(
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             
             result = response.json()
-            # Extract the content from the response
+            # Extract the content from response
             return result.get("response", "Error: No response text found in Ollama output.")
 
         except requests.exceptions.RequestException as e:
@@ -368,6 +366,13 @@ def main():
         else:
             total_snippets = sum(len(snippets) for snippets in grep_results.values())
             print(f"Progress Signal: Grep successfully extracted {total_snippets} relevant snippets.")
+            # DEBUGGING STEP: Print raw context to see snippets passed to LLM
+            print("\n*** DEBUG: GREP RAW CONTEXT EXTRACTED ***")
+            for file_path, snippets in grep_results.items():
+                print(f"--- File: {file_path} ---")
+                for snippet in snippets:
+                    print(snippet) # Print the entire multi-line snippet
+            print("*****************************************\n")
 
             # Step C: Reasoning (Synthesis)
             print("Agent Step 3/3 (Thinking...): Running LLM Reasoning Engine for final synthesis...")
