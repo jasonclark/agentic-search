@@ -172,15 +172,13 @@ def grep_files(file_paths: List[str], query: str, context_lines: int = 1) -> Dic
     """
     results: Dict[str, List[str]] = {}
     keywords = _extract_keywords(query)
-    keyword_patterns = [re.escape(k) for k in keywords]
     
-    if not keyword_patterns:
+    if not keywords:
         print("Agent's Grep Tool: No effective keywords extracted for searching.")
         return {}
 
-    # Compile a regex pattern to find any of the keywords
-    # Simulates fast, exact-match searching
-    combined_pattern = re.compile(f'({"|".join(keyword_patterns)})', re.IGNORECASE)
+    # Compile regex pattern to find any of the keywords (fast, exact-match search)
+    combined_pattern = re.compile(f'({"|".join(re.escape(k) for k in keywords)})', re.IGNORECASE)
     
     print(f"Agent's Grep Tool: Searching for keyword patterns: {', '.join(keywords)} in {len(file_paths)} files.")
 
